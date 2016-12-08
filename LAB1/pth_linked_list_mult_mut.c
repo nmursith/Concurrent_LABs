@@ -1,14 +1,14 @@
 /* File:     pth_linked_list_mult_mut.c
  *
- * Purpose:  Implement a multi-threaded sorted linked list of 
- *           ints with ops insert, print, member, delete, free list.  
+ * Purpose:  Implement a multi-threaded sorted linked list of
+ *           ints with ops insert, print, member, delete, free list.
  *           This version uses one mutex per list node
- * 
- * Compile:  gcc -g -Wall -I. -o pth_linked_list_mult_mut 
+ *
+ * Compile:  gcc -g -Wall -I. -o pth_linked_list_mult_mut
  *              pth_linked_list_mult_mut.c my_rand.c -lpthread
  * Usage:    ./pth_linked_list_mult_mut <thread_count>
  * Input:    total number of keys inserted by main thread
- *           total number of ops carried out 
+ *           total number of ops carried out
  *           percent of ops that are searches and inserts (remaining ops
  *              are deletes.
  * Output:   Elapsed time to carry out the ops
@@ -48,7 +48,7 @@ struct list_node_s {
 };
 
 /* Shared variables */
-struct list_node_s* head = NULL;  
+struct list_node_s* head = NULL;
 pthread_mutex_t head_mutex;
 int         thread_count;
 int         total_ops;
@@ -66,9 +66,9 @@ void        Get_input(int* inserts_in_main_p);
 void*       Thread_work(void* rank);
 
 /* List operations */
-void        Init_ptrs(struct list_node_s** curr_pp, 
+void        Init_ptrs(struct list_node_s** curr_pp,
       struct list_node_s** pred_pp);
-int         Advance_ptrs(struct list_node_s** curr_pp, 
+int         Advance_ptrs(struct list_node_s** curr_pp,
       struct list_node_s** pred_pp);
 int         Insert(int value);
 void        Print(void);
@@ -79,7 +79,7 @@ int         Is_empty(void);
 
 /*-----------------------------------------------------------------*/
 int main(int argc, char* argv[]) {
-   long i; 
+   long i;
    int key, success, attempts;
    pthread_t* thread_handles;
    int inserts_in_main;
@@ -119,6 +119,7 @@ int main(int argc, char* argv[]) {
    for (i = 0; i < thread_count; i++)
       pthread_join(thread_handles[i], NULL);
    GET_TIME(finish);
+
    printf("Elapsed time = %e seconds\n", finish - start);
    printf("Total ops = %d\n", total_ops);
    printf("member ops = %d\n", member_total);
@@ -188,7 +189,7 @@ int Advance_ptrs(struct list_node_s** curr_pp, struct list_node_s** pred_pp) {
    if (curr_p == NULL)
       if (pred_p == NULL)
          return EMPTY_LIST;
-      else 
+      else
          return END_OF_LIST;
    else { // *curr_pp != NULL
       if (curr_p->next != NULL)
@@ -216,7 +217,7 @@ int Insert(int value) {
    int rv = 1;
 
    Init_ptrs(&curr, &pred);
-   
+
    while (curr != NULL && curr->data < value) {
       Advance_ptrs(&curr, &pred);
    }
@@ -229,7 +230,7 @@ int Insert(int value) {
       pthread_mutex_init(&(temp->mutex), NULL);
       temp->data = value;
       temp->next = curr;
-      if (curr != NULL) 
+      if (curr != NULL)
          pthread_mutex_unlock(&(curr->mutex));
       if (pred == NULL) {
          // Inserting in head of list
@@ -240,7 +241,7 @@ int Insert(int value) {
          pthread_mutex_unlock(&(pred->mutex));
       }
    } else { /* value in list */
-      if (curr != NULL) 
+      if (curr != NULL)
          pthread_mutex_unlock(&(curr->mutex));
       if (pred != NULL)
          pthread_mutex_unlock(&(pred->mutex));
@@ -275,7 +276,7 @@ int  Member(int value) {
    pthread_mutex_lock(&head_mutex);
    temp = head;
    while (temp != NULL && temp->data < value) {
-      if (temp->next != NULL) 
+      if (temp->next != NULL)
          pthread_mutex_lock(&(temp->next->mutex));
       if (temp == head)
          pthread_mutex_unlock(&head_mutex);
@@ -289,7 +290,7 @@ int  Member(int value) {
 #     endif
       if (temp == head)
          pthread_mutex_unlock(&head_mutex);
-      if (temp != NULL) 
+      if (temp != NULL)
          pthread_mutex_unlock(&(temp->mutex));
       return 0;
    } else {
@@ -317,7 +318,7 @@ int Delete(int value) {
    while (curr != NULL && curr->data < value) {
       Advance_ptrs(&curr, &pred);
    }
-   
+
    if (curr != NULL && curr->data == value) {
       if (pred == NULL) { /* first element in list */
          head = curr->next;
@@ -328,7 +329,7 @@ int Delete(int value) {
          pthread_mutex_unlock(&(curr->mutex));
          pthread_mutex_destroy(&(curr->mutex));
          free(curr);
-      } else { 
+      } else {
          pred->next = curr->next;
          pthread_mutex_unlock(&(pred->mutex));
 #        ifdef DEBUG
@@ -360,7 +361,7 @@ void Free_list(void) {
    struct list_node_s* following;
 
    if (Is_empty()) return;
-   current = head; 
+   current = head;
    following = current->next;
    while (following != NULL) {
 #     ifdef DEBUG
