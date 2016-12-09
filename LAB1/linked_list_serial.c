@@ -28,7 +28,7 @@ struct list_node_s {
 
 struct      list_node_s* head = NULL;
 int         thread_count;
-int         samples = 50 ;
+int         samples = 10 ;
 int         nInsertion = 1000;
 int         mOperations = 10000;
 double      mInsertPercent = 50;
@@ -98,6 +98,9 @@ int main(int argc, char **argv) {
 
     short Case;
     short thread;
+    double start, finish;
+
+    GET_TIME(start);
 
     for(Case = 1; Case<=3; Case++){
 
@@ -110,12 +113,10 @@ int main(int argc, char **argv) {
             calculateTime(Case-1, 2*thread, 2*thread+1);
 
         }
-
-
-
     }
+    GET_TIME(finish);
 
-    printf("\n\n" );
+    printf("Total Time Elapesed %f\n\n", (finish-start) );
     showResults();
    return 0;
 }
@@ -136,7 +137,13 @@ int i,j,k;
           printf("RW Lock\t\t");
         }
           for(k=0; k<6; k++){
+
+            if(j==0 && k>1){
+              printf("-\t\t\t\t-\t");
+              break;
+            }
               printf("%f\t", Results[i][j][k]);
+
           }
           printf("\n");
       }
