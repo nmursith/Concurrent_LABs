@@ -39,6 +39,7 @@ unsigned    seed = 1;
 int         member_total=0;
 int         insert_total=0;
 int         delete_total=0;
+int         thread_counts[3] = {1,2,4};
 
 pthread_mutex_t mutex;
 pthread_mutex_t count_operation_onelist_mutex;
@@ -76,20 +77,10 @@ void* Thread_work_RW_Lock(void* rank);
 
 int main(int argc, char **argv) {
 
-  if(argc==2){
-
-      thread_count = Get_Number(argv[1]);
-    }
-    else{
-      printf("Number of threads required\n");
-      //return 0;
-
-    }
-
     if (argc != 2) Usage(argv[0]);
-    thread_count = strtol(argv[1],NULL,10);
+    samples = strtol(argv[1],NULL,10);
 
-    int thread_counts[3] = {1,2,4};
+
     double cases[3][3] = {
         {99, 0.5,0.5},
         {90,5,5},
@@ -100,6 +91,7 @@ int main(int argc, char **argv) {
     short thread;
     double start, finish;
 
+    printf("Running....\n");
     GET_TIME(start);
 
     for(Case = 1; Case<=3; Case++){
@@ -125,6 +117,7 @@ void showResults(){
 int i,j,k;
   for(i=0; i<3; i++){
     printf("Case %d \n", (i+1));
+    printf("\t\tAverage(%d)\tSD (%d)\t\tAverage(%d)\tSD (%d)\t\tAverage(%d)\tSD (%d)\n",thread_counts[0],thread_counts[0],thread_counts[1],thread_counts[1],thread_counts[2],thread_counts[2] );
 
       for(j=0; j<3; j++){
         if(j==0){
@@ -139,7 +132,7 @@ int i,j,k;
           for(k=0; k<6; k++){
 
             if(j==0 && k>1){
-              printf("-\t\t\t\t-\t");
+              printf("-\t\t-\t\t-\t\t-");
               break;
             }
               printf("%f\t", Results[i][j][k]);
@@ -190,7 +183,7 @@ void calculateTime(short Case, short col1, short col2){
       printf("%f\t", sqrt(variance[j]));
       Results[Case][j][col2] = sqrt(variance[j]);
   }
-  printf("\n\n" );
+  printf("\n" );
 }
 
 double runSerialVersionList(){
@@ -238,7 +231,7 @@ double runSerialVersionList(){
 
     Free_list();
 
-    printf("Elapsed time Serial= %e seconds\n", finish - start);
+    //printf("Elapsed time Serial= %e seconds\n", finish - start);
     // printf("Total ops = %d\n", mOperations);
     // printf("member ops = %d\n", member_total);
     // printf("insert ops = %d\n", insert_total);
@@ -275,7 +268,7 @@ double runOneMutexPerList(){
    for (i = 0; i < thread_count; i++)
       pthread_join(thread_handles[i], NULL);
    GET_TIME(finish);
-   printf("Elapsed time OneMutex = %e seconds\n", finish - start);
+  // printf("Elapsed time OneMutex = %e seconds\n", finish - start);
   //  printf("Total ops = %d\n", mOperations);
   //  printf("member ops = %d\n", member_total);
   //  printf("insert ops = %d\n", insert_total);
@@ -322,7 +315,7 @@ double runReadWriteLockList(){
   for (i = 0; i < thread_count; i++)
      pthread_join(thread_handles[i], NULL);
   GET_TIME(finish);
-  printf("Elapsed time ReadWriteLocke = %e seconds\n", finish - start);
+  //printf("Elapsed time ReadWriteLocke = %e seconds\n", finish - start);
   // printf("Total ops = %d\n", mOperations);
   // printf("member ops = %d\n", member_total);
   // printf("insert ops = %d\n", insert_total);
@@ -360,7 +353,7 @@ void populate(){
 }
 
 void Usage(char* prog_name) {
-   fprintf(stderr, "usage: %s <thread_count>\n", prog_name);
+   fprintf(stderr, "usage: %s <samples>\n", prog_name);
    exit(0);
 }
 void Print() {
