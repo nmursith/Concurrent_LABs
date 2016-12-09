@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <math.h>
 #include <errno.h>
 #include <limits.h>
 #include <sys/time.h>
@@ -27,9 +28,9 @@ struct list_node_s {
 
 struct      list_node_s* head = NULL;
 int         thread_count;
-
-int         nInsertion = 100;
-int         mOperations = 1000;
+int         samples = 50 ;
+int         nInsertion = 1000;
+int         mOperations = 10000;
 double      mInsertPercent = 50;
 double      mMemberPercent = 25;
 double      mDeletePercent = 25;
@@ -59,10 +60,16 @@ double randomDouble(unsigned* a_p);
 void Usage(char* prog_name);
 void makeOperationZero();
 
-void runSerialVersionList();
-void runOneMutexPerList();
-void runReadWriteLockList();
+double runSerialVersionList();
+double runOneMutexPerList();
+double runReadWriteLockList();
+
+double Results[3][3][6];
+
+
+void showResults();
 void populate();
+void calculateTime(short Case, short row, short col);
 
 void* Thread_work_One_Mutex(void* rank);
 void* Thread_work_RW_Lock(void* rank);
@@ -82,16 +89,104 @@ int main(int argc, char **argv) {
     if (argc != 2) Usage(argv[0]);
     thread_count = strtol(argv[1],NULL,10);
 
-    runOneMutexPerList();
-    runSerialVersionList();
+    int thread_counts[3] = {1,2,4};
+    double cases[3][3] = {
+        {99, 0.5,0.5},
+        {90,5,5},
+        {50, 25, 25}
+    };
 
-    runReadWriteLockList();
+    short Case;
+    short thread;
+
+    for(Case = 1; Case<=3; Case++){
+
+      mMemberPercent = cases[Case-1][0];
+      mInsertPercent =  cases[Case-1][1];
+      mDeletePercent =  cases[Case-1][2];
+
+        for(thread =0; thread<3; thread++){
+          thread_count = thread_counts[thread];
+            calculateTime(Case-1, 2*thread, 2*thread+1);
+
+        }
 
 
+
+    }
+
+    printf("\n\n" );
+    showResults();
    return 0;
 }
 
-void runSerialVersionList(){
+void showResults(){
+int i,j,k;
+  for(i=0; i<3; i++){
+    printf("Case %d \n", (i+1));
+
+      for(j=0; j<3; j++){
+        if(j==0){
+          printf("Serial\t\t");
+        }
+        if(j==1){
+          printf("Mutex\t\t");
+        }
+        if(j==2){
+          printf("RW Lock\t\t");
+        }
+          for(k=0; k<6; k++){
+              printf("%f\t", Results[i][j][k]);
+          }
+          printf("\n");
+      }
+      printf("\n\n");
+
+  }
+}
+
+void calculateTime(short Case, short col1, short col2){
+  double elapsed[3][samples];
+  double average[3] = {0,0,0};
+  double variance[3] = {0,0,0};
+
+  int i,j;
+
+
+  for(i=0; i<samples; i++){
+    elapsed[0][i] = runSerialVersionList();
+    average[0]+=elapsed[0][i];
+  }
+
+  for(i=0; i<samples; i++){
+
+    elapsed[1][i] = runOneMutexPerList();
+    average[1]+=elapsed[1][i];
+  }
+
+  for(i=0; i<samples; i++){
+    elapsed[2][i] = runReadWriteLockList();
+    average[2]+=elapsed[2][i];
+  }
+
+
+  for(j=0; j<3; j++){
+    average[j] = average[j]/samples;
+    printf("%f\t", average[j] );
+
+    Results[Case][j][col1] = average[j];
+
+    for(i=0; i<samples; i++){
+      variance[j] += pow((elapsed[j][i] - average[j]), 2);
+    }
+    variance[j] = variance[j]/samples;
+      printf("%f\t", sqrt(variance[j]));
+      Results[Case][j][col2] = sqrt(variance[j]);
+  }
+  printf("\n\n" );
+}
+
+double runSerialVersionList(){
 
 
   int i, val;
@@ -127,22 +222,27 @@ void runSerialVersionList(){
 
       }
    }  /* for */
+
+
     GET_TIME(finish);
     member_total = member;
     insert_total = insert;
     delete_total = delete;
 
-    printf("Elapsed time = %e seconds\n", finish - start);
-    printf("Total ops = %d\n", mOperations);
-    printf("member ops = %d\n", member_total);
-    printf("insert ops = %d\n", insert_total);
-    printf("delete ops = %d\n", delete_total);
+    Free_list();
 
+    printf("Elapsed time Serial= %e seconds\n", finish - start);
+    // printf("Total ops = %d\n", mOperations);
+    // printf("member ops = %d\n", member_total);
+    // printf("insert ops = %d\n", insert_total);
+    // printf("delete ops = %d\n", delete_total);
+    double elapsed = finish - start;
 
+    return elapsed;
 
 
 }
-void runOneMutexPerList(){
+double runOneMutexPerList(){
   int i;
   pthread_t* thread_handles;
   double start, finish;
@@ -168,11 +268,11 @@ void runOneMutexPerList(){
    for (i = 0; i < thread_count; i++)
       pthread_join(thread_handles[i], NULL);
    GET_TIME(finish);
-   printf("Elapsed time = %e seconds\n", finish - start);
-   printf("Total ops = %d\n", mOperations);
-   printf("member ops = %d\n", member_total);
-   printf("insert ops = %d\n", insert_total);
-   printf("delete ops = %d\n", delete_total);
+   printf("Elapsed time OneMutex = %e seconds\n", finish - start);
+  //  printf("Total ops = %d\n", mOperations);
+  //  printf("member ops = %d\n", member_total);
+  //  printf("insert ops = %d\n", insert_total);
+  //  printf("delete ops = %d\n", delete_total);
 
 #  ifdef OUTPUT
    printf("After threads terminate, list = \n");
@@ -185,8 +285,12 @@ void runOneMutexPerList(){
    pthread_mutex_destroy(&count_operation_onelist_mutex);
    free(thread_handles);
 
+   double elapsed = finish - start;
+
+   return elapsed;
+
 }
-void runReadWriteLockList(){
+double runReadWriteLockList(){
   int i;
   pthread_t* thread_handles;
   double start, finish;
@@ -211,11 +315,11 @@ void runReadWriteLockList(){
   for (i = 0; i < thread_count; i++)
      pthread_join(thread_handles[i], NULL);
   GET_TIME(finish);
-  printf("Elapsed time = %e seconds\n", finish - start);
-  printf("Total ops = %d\n", mOperations);
-  printf("member ops = %d\n", member_total);
-  printf("insert ops = %d\n", insert_total);
-  printf("delete ops = %d\n", delete_total);
+  printf("Elapsed time ReadWriteLocke = %e seconds\n", finish - start);
+  // printf("Total ops = %d\n", mOperations);
+  // printf("member ops = %d\n", member_total);
+  // printf("insert ops = %d\n", insert_total);
+  // printf("delete ops = %d\n", delete_total);
 
 #  ifdef OUTPUT
   printf("After threads terminate, list = \n");
@@ -227,7 +331,9 @@ void runReadWriteLockList(){
   pthread_rwlock_destroy(&rwlock);
   pthread_mutex_destroy(&count_operation_rwlock_mutex);
   free(thread_handles);
+  double elapsed = finish - start;
 
+  return elapsed;
 }
 
 void populate(){
@@ -242,7 +348,7 @@ void populate(){
      if (success) i++;
 
   }
-  printf("Inserted %ld keys in empty list\n", i);
+//  printf("Inserted %ld keys in empty list\n", i);
 
 }
 
