@@ -368,6 +368,6 @@ int main()
     printf("========================================================================================\n");
     printf("Parallel Programme with RW lock: Average time spent : %f seconds\n",calculateSum(timespent)/samples );
     printf("Parallel Programme with RW lock: Standard deviation : %f seconds\n",calculateSD(timespent));
-    
+
     return 0;
 }
